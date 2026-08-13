@@ -19,7 +19,7 @@ func TestUSInventoryProfilesKeepBooksAndTaxSeparate(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if books.Purpose != "books" || !books.Request.Impair || books.Request.Config.DefaultValuationStrategy != "gaap-fair-value" || !books.Request.Config.CapitalizeTradingFees || books.Request.Config.ImpairmentMethodology != "org-default" {
+	if books.Purpose != "books" || !books.Request.Impair || books.Request.Config.DefaultValuationStrategy != "gaap-fair-value" || books.Request.Config.CapitalizeTradingFees || books.Request.Config.ImpairmentMethodology != "org-default" {
 		t.Fatalf("books = %#v", books)
 	}
 	if tax.Purpose != "tax" || tax.Request.Impair || !tax.Request.Config.CapitalizeTradingFees || tax.Request.Config.ImpairmentMethodology != "org-default" {
@@ -27,6 +27,39 @@ func TestUSInventoryProfilesKeepBooksAndTaxSeparate(t *testing.T) {
 	}
 	if books.Request.Config.InventoryMappingRule == nil || books.Request.Config.InventoryMappingRule.Type != "inventory-per-wallet" || tax.Request.Strategy.TaxStrategy != "FIFO" {
 		t.Fatalf("mapping/strategy books=%#v tax=%#v", books.Request, tax.Request)
+	}
+}
+
+func TestInventoryGuidancePromptsInsteadOfRejectingOtherJurisdictions(t *testing.T) {
+	guidance, err := buildInventoryGuidance("UK", "IFRS", "tax", "2026-07-31")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if guidance["schemaVersion"] != "2" || guidance["mustRecheckSources"] != true {
+		t.Fatalf("guidance = %#v", guidance)
+	}
+	notes := guidance["jurisdictionNotes"].([]inventoryJurisdictionNote)
+	if len(notes) != 2 || notes[0].ID != "IFRS" || notes[1].ID != "UK" {
+		t.Fatalf("notes = %#v", notes)
+	}
+	for _, question := range guidance["questions"].([]inventoryGuidanceQuestion) {
+		if question.ID == "jurisdiction" || question.ID == "framework" || question.ID == "effective_date" {
+			t.Fatalf("resolved question was repeated: %#v", question)
+		}
+	}
+}
+
+func TestInventoryGuidanceReturnsGeneralFrameworkForUnknownJurisdiction(t *testing.T) {
+	guidance, err := buildInventoryGuidance("DE", "", "tax", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if guidance["status"] != "requires-user-input" {
+		t.Fatalf("guidance = %#v", guidance)
+	}
+	warnings := strings.Join(guidance["warnings"].([]string), " ")
+	if !strings.Contains(warnings, "No reviewed tax note is embedded for DE") {
+		t.Fatalf("warnings = %q", warnings)
 	}
 }
 

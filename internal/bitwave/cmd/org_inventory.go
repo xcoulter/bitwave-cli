@@ -108,46 +108,26 @@ func newOrgInventoryUpdatesCmd() *cobra.Command {
 }
 
 func newOrgInventoryGuidanceCmd() *cobra.Command {
-	var jurisdiction, purpose string
+	var jurisdiction, framework, purpose, effectiveDate string
 	cmd := &cobra.Command{
 		Use:   "guidance",
 		Short: "Return jurisdiction-aware inventory setup prompts for an LLM",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			jurisdiction = strings.ToUpper(strings.TrimSpace(jurisdiction))
+			framework = strings.ToUpper(strings.TrimSpace(framework))
 			purpose = strings.ToLower(strings.TrimSpace(purpose))
-			if jurisdiction != "US" {
-				return fmt.Errorf("unsupported jurisdiction %q; only US guidance is currently reviewed", jurisdiction)
+			effectiveDate = strings.TrimSpace(effectiveDate)
+			guidance, err := buildInventoryGuidance(jurisdiction, framework, purpose, effectiveDate)
+			if err != nil {
+				return err
 			}
-			profiles := usInventoryProfiles()
-			if purpose != "" {
-				filtered := profiles[:0]
-				for _, profile := range profiles {
-					if profile.Purpose == purpose {
-						filtered = append(filtered, profile)
-					}
-				}
-				if len(filtered) == 0 {
-					return errors.New("--purpose must be books or tax")
-				}
-				profiles = filtered
-			}
-			return writeJSON(cmd.OutOrStdout(), map[string]any{
-				"schemaVersion": "1",
-				"jurisdiction":  jurisdiction,
-				"disclaimer":    "Informational guidance only; not legal, tax, accounting, or financial advice. Verify current primary sources and obtain qualified professional approval.",
-				"llmPrompt": []string{
-					"Ask whether the view is for financial statements, federal tax, management reporting, or reconciliation; do not infer one from the user's location.",
-					"Ask for entity type, fiscal year, accounting framework, industry-specific guidance, state/local filing jurisdictions, and whether the entity issues GAAP financial statements.",
-					"Ask the accountant to approve asset scope, lot-selection method, wallet/account mapping, fee treatment, wrapping and internal-transfer treatment, pricing source, and effective date.",
-					"For tax specific identification, confirm that contemporaneous identification and substantiating records exist; otherwise surface FIFO as the federal default, not as personalized advice.",
-					"Re-check every source at execution time because laws, regulations, standards, and Bitwave capabilities change.",
-				},
-				"profiles": profiles,
-			})
+			return writeJSON(cmd.OutOrStdout(), guidance)
 		},
 	}
-	cmd.Flags().StringVar(&jurisdiction, "jurisdiction", "US", "Reporting jurisdiction (currently: US)")
-	cmd.Flags().StringVar(&purpose, "purpose", "", "Optional purpose: books or tax")
+	cmd.Flags().StringVar(&jurisdiction, "jurisdiction", "", "Optional tax or filing jurisdiction, for example US, UK, CA, or SG")
+	cmd.Flags().StringVar(&framework, "framework", "", "Optional financial-reporting framework: US-GAAP or IFRS")
+	cmd.Flags().StringVar(&purpose, "purpose", "", "Optional purpose: books, tax, management, or reconciliation")
+	cmd.Flags().StringVar(&effectiveDate, "effective-date", "", "Optional policy effective date in YYYY-MM-DD")
 	cmd.Flags().Bool("json", true, "Emit machine-readable JSON (the only supported format)")
 	return cmd
 }
@@ -414,19 +394,19 @@ func usInventoryProfiles() []inventoryProfile {
 		UseOriginalAcquisitionDateForTransfers: true,
 	}
 	gaapConfig := commonConfig
-	gaapConfig.CapitalizeTradingFees = true
+	gaapConfig.CapitalizeTradingFees = false
 	gaapConfig.DefaultValuationStrategy = "gaap-fair-value"
 	taxConfig := commonConfig
 	taxConfig.CapitalizeTradingFees = true
 	return []inventoryProfile{
 		{
 			ID: usGAAPProfile, Jurisdiction: "US", Purpose: "books", Name: "US GAAP - Fair Value",
-			Summary: "Starting profile for U.S. GAAP financial statements: FIFO lot tracking per wallet, fair-value remeasurement for in-scope crypto assets, capitalized trading fees, and the organization's pricing methodology.",
+			Summary: "Starting profile for U.S. GAAP financial statements: FIFO operational lot tracking per wallet, fair-value remeasurement for in-scope crypto assets, acquisition transaction costs expensed by default, and the organization's pricing methodology.",
 			Request: orgreports.InventoryViewCreateRequest{Name: "US GAAP - Fair Value", Config: gaapConfig, Strategy: orgreports.InventoryViewStrategy{TaxStrategy: "FIFO"}, Impair: true, IgnoreNFTs: true, IgnoreOrgWrappingTreatments: false},
 			Confirmations: []string{
 				"Confirm the entity actually reports under U.S. GAAP; a U.S. location alone does not establish the accounting framework.",
 				"Confirm which holdings meet every ASU 2023-08 scope criterion; NFTs, issued/related-party tokens, and assets with enforceable underlying rights require separate analysis.",
-				"Confirm fee treatment with the accountant; this Bitwave profile capitalizes trading fees even though some accounting guidance or entity policies may require expense treatment.",
+				"Confirm fee treatment with the accountant; this profile leaves fee capitalization off because ASU 2023-08 generally expenses acquisition transaction costs unless industry-specific guidance applies.",
 				"The valuation pricing methodology explicitly inherits the organization's configured default; verify that organization policy before running the view.",
 				"FIFO is an operational lot-selection default in this view, not a FASB-mandated election.",
 			},
