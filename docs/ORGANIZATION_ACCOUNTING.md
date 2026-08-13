@@ -52,6 +52,52 @@ The provider's chart should be created and maintained in that accounting
 system, then synced into Bitwave. The CLI will not write manual accounts into an
 external connection.
 
+### Rillet invoice and bill visibility
+
+When an active Rillet connection is present, `bitwave org accounting status
+--json` includes compact `providerSyncGuidance`. An empty invoice selector does
+not by itself prove that Rillet failed to return or Bitwave failed to import the
+invoice. The LLM should distinguish provider retrieval, Bitwave materialization,
+API serialization, and UI eligibility before stating the cause.
+
+Rillet monetary amounts use ISO currency codes such as `USD`. Bitwave's stored
+invoice contract uses canonical asset IDs such as `FIAT.1`; API and UI DTOs then
+render that value as `USD`. If the Bitwave invoice endpoint reports `Bad assetId,
+received USD`, the record can already exist: the likely defect is that the
+provider adapter persisted the ISO code directly or the read path failed to
+normalize a legacy record. Do not tell the user to recreate the invoice until
+this distinction is checked.
+
+Rillet contact identity is deterministic:
+
+```text
+<accountingConnectionId>.<raw Rillet customer_id or vendor_id>
+```
+
+Preserve both parts exactly. For a selected contact to expose an invoice or
+bill, the imported record must use that contact ID and the same accounting
+connection. Payment categorization normally further restricts results to an
+`AwaitingPayment` status and a non-zero due amount. Therefore the LLM should
+check, in order:
+
+1. the invoice or bill exists in Rillet for the raw customer or vendor ID
+   (`GET /invoices?customer_id=<raw id>` or `GET
+   /bills?vendor_id=<raw id>`), using the required API-version header and
+   following cursor pagination;
+2. the prefixed contact exists in Bitwave;
+3. the Bitwave invoice endpoint response for that exact contact, including any
+   error body;
+4. invoice sync skip settings, the remote-invoice writing kill switch, and
+   materialization/upsert errors; and
+5. the imported record's currency, `contactId`, status, `dueAmount`, and
+   `accountingConnectionId`.
+
+Typical Rillet status mapping is `UNPAID` and `PARTIALLY_PAID` to
+`AwaitingPayment`, `PAID` and `APPLIED` to `Paid`, and `UNBILLED` to `Draft`.
+Other statuses may intentionally be ineligible for payment categorization.
+This guidance is provider troubleshooting context, not evidence that a specific
+organization has a sync defect.
+
 ## Automatically provisioned manual setup
 
 Discover and reuse the existing manual connection:

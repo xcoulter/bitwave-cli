@@ -42,8 +42,19 @@ type accountingReadiness struct {
 	AdditionalCategoryCount     int                               `json:"additionalCategoryCount"`
 	ContactCount                int                               `json:"contactCount"`
 	Starter                     accountingStarterPolicy           `json:"starter"`
+	ProviderSyncGuidance        *accountingProviderSyncGuidance   `json:"providerSyncGuidance,omitempty"`
 	Prompt                      map[string]any                    `json:"prompt,omitempty"`
 	NextCommands                []string                          `json:"nextCommands"`
+}
+
+type accountingProviderSyncGuidance struct {
+	Provider              string   `json:"provider"`
+	AdvisoryOnly          bool     `json:"advisoryOnly"`
+	CurrencyContract      []string `json:"currencyContract"`
+	ContactIdentity       string   `json:"contactIdentity"`
+	StatusMapping         []string `json:"statusMapping"`
+	InvoiceEligibility    []string `json:"invoiceEligibility"`
+	EmptySelectorWorkflow []string `json:"emptySelectorWorkflow"`
 }
 
 type chartAccountInput struct {
@@ -271,6 +282,12 @@ func buildAccountingReadiness(connections []orgreports.AccountingConnection, cat
 		Connections: active, ConnectionCount: len(active), AdditionalCategoryCount: availableAccounts, ContactCount: availableContacts,
 		NextCommands: []string{"bitwave org accounting status --json"},
 	}
+	for _, connection := range active {
+		if strings.EqualFold(strings.TrimSpace(connection.Type), "rillet") {
+			readiness.ProviderSyncGuidance = rilletSyncGuidance()
+			break
+		}
+	}
 	if len(active) == 1 {
 		readiness.Starter = starterPolicy(active[0].ID)
 	} else {
@@ -316,6 +333,35 @@ func buildAccountingReadiness(connections []orgreports.AccountingConnection, cat
 		readiness.NextCommands = []string{"bitwave rule context --preset PRESET", "bitwave transaction categorization-options --accounting-connection CONNECTION_ID --query QUERY --json"}
 	}
 	return readiness
+}
+
+func rilletSyncGuidance() *accountingProviderSyncGuidance {
+	return &accountingProviderSyncGuidance{
+		Provider:     "Rillet",
+		AdvisoryOnly: true,
+		CurrencyContract: []string{
+			"Rillet monetary amounts use ISO currency codes such as USD.",
+			"Bitwave must persist the canonical asset ID, such as FIAT.1 for USD, and serialize the API/UI response back to USD.",
+			"A Bad assetId error containing an ISO code indicates a provider-mapping or serialization defect, not proof that the invoice was never imported.",
+		},
+		ContactIdentity: "The Bitwave contact ID is <accountingConnectionId>.<raw Rillet customer_id or vendor_id>; preserve both components exactly.",
+		StatusMapping: []string{
+			"UNPAID and PARTIALLY_PAID map to AwaitingPayment; PAID and APPLIED map to Paid.",
+			"UNBILLED maps to Draft; CREDITED, PARTIALLY_CREDITED, and unknown statuses map to Other.",
+		},
+		InvoiceEligibility: []string{
+			"The invoice contact and selected contact IDs must match exactly.",
+			"The invoice and selected contact must belong to the same accounting connection.",
+			"Payment categorization normally shows AwaitingPayment records with a non-zero due amount; provider status mapping can exclude other records.",
+		},
+		EmptySelectorWorkflow: []string{
+			"Confirm the record directly with Rillet GET /invoices?customer_id=<raw id> or GET /bills?vendor_id=<raw id>; send the required API version header and follow cursor pagination.",
+			"Confirm the prefixed contact exists in Bitwave.",
+			"Query Bitwave invoices for that exact contact and inspect the response error before assuming the result is empty.",
+			"Verify invoice sync was not skipped, disabled by a writing kill switch, or rejected during remote-invoice materialization.",
+			"If records exist but the endpoint fails, inspect currency, contactId, status, dueAmount, and accountingConnectionId serialization.",
+		},
+	}
 }
 
 func newOrgAccountingConnectionsCmd() *cobra.Command {

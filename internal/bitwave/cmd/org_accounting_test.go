@@ -106,3 +106,25 @@ func TestOrgAccountingHelpExplainsExistingManualAndExternalChoice(t *testing.T) 
 		t.Fatalf("help = %q", cmd.Long)
 	}
 }
+
+func TestAccountingReadinessIncludesRilletInvoiceSyncGuidanceOnlyWhenRelevant(t *testing.T) {
+	rillet := buildAccountingReadiness([]orgreports.AccountingConnection{{ID: "conn-1", Type: "rillet"}}, nil, nil)
+	if rillet.ProviderSyncGuidance == nil || rillet.ProviderSyncGuidance.Provider != "Rillet" {
+		t.Fatalf("provider guidance = %#v", rillet.ProviderSyncGuidance)
+	}
+	joined := strings.Join(append(append([]string{}, rillet.ProviderSyncGuidance.CurrencyContract...), rillet.ProviderSyncGuidance.EmptySelectorWorkflow...), " ")
+	if !strings.Contains(joined, "FIAT.1") || !strings.Contains(joined, "Bad assetId") || !strings.Contains(joined, "materialization") {
+		t.Fatalf("provider guidance = %#v", rillet.ProviderSyncGuidance)
+	}
+	if !strings.Contains(rillet.ProviderSyncGuidance.ContactIdentity, "accountingConnectionId") {
+		t.Fatalf("contact identity = %q", rillet.ProviderSyncGuidance.ContactIdentity)
+	}
+	if !strings.Contains(strings.Join(rillet.ProviderSyncGuidance.StatusMapping, " "), "AwaitingPayment") {
+		t.Fatalf("status mapping = %#v", rillet.ProviderSyncGuidance.StatusMapping)
+	}
+
+	manual := buildAccountingReadiness([]orgreports.AccountingConnection{{ID: "conn-1", Type: "manual"}}, nil, nil)
+	if manual.ProviderSyncGuidance != nil {
+		t.Fatalf("unexpected provider guidance = %#v", manual.ProviderSyncGuidance)
+	}
+}
