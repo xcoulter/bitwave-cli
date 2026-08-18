@@ -40,4 +40,8 @@ func TestValidateArgsRejectsNULBytes(t *testing.T) {
 	if err := ValidateArgs([]string{"report", "balance\x00unsafe"}); err == nil {
 		t.Fatal("expected NUL byte to be rejected")
 	}
+	result := Execute(context.Background(), []string{"report", "balance\x00unsafe"}, "org")
+	if result.ExitCode != 2 || !strings.Contains(result.Stderr, "NUL") {
+		t.Fatalf("invalid invocation result = %#v", result)
+	}
 }

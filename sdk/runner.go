@@ -82,6 +82,14 @@ func ExecuteWithOptions(ctx context.Context, options ExecuteOptions) CommandResu
 	defer executeMu.Unlock()
 
 	args := NormalizeArgs(options.Args)
+	if err := ValidateArgs(args); err != nil {
+		return CommandResult{
+			Command:   append([]string{"bitwave"}, args...),
+			Directory: options.WorkingDirectory,
+			ExitCode:  2,
+			Stderr:    err.Error(),
+		}
+	}
 	stdout := &limitedBuffer{limit: maxOutput}
 	stderr := &limitedBuffer{limit: maxOutput}
 
