@@ -79,6 +79,8 @@ type ReportRow struct {
 
 type Client struct {
 	BaseURL          string
+	API2URL          string
+	TransactionsURL  string
 	RulesQueryURL    string
 	RulesMutationURL string
 	TokenResolver    func() (string, error)
@@ -89,12 +91,18 @@ func New(baseURL string, tokenResolver func() (string, error)) *Client {
 	baseURL = strings.TrimRight(baseURL, "/")
 	rulesQueryURL := baseURL + "/graphql-reports"
 	rulesMutationURL := baseURL + "/graphql"
+	api2URL := baseURL
+	transactionsURL := baseURL
 	if parsed, err := url.Parse(baseURL); err == nil && parsed.Hostname() == "api.bitwave.io" {
+		api2URL = "https://api2.bitwave.io"
+		transactionsURL = "https://transactions.bitwave.io"
 		rulesQueryURL = "https://api4.bitwave.io/graphql-reports"
 		rulesMutationURL = "https://api-app.bitwave.io/graphql"
 	}
 	return &Client{
 		BaseURL:          baseURL,
+		API2URL:          api2URL,
+		TransactionsURL:  transactionsURL,
 		RulesQueryURL:    rulesQueryURL,
 		RulesMutationURL: rulesMutationURL,
 		TokenResolver:    tokenResolver,

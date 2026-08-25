@@ -19,10 +19,12 @@ type RawResponse struct {
 }
 
 const (
-	APIServiceCore     = "core"
-	APIServiceApp      = "app"
-	APIServicePlatform = "platform"
-	APIServiceReports  = "reports"
+	APIServiceCore         = "core"
+	APIServiceAPI2         = "api2"
+	APIServiceApp          = "app"
+	APIServicePlatform     = "platform"
+	APIServiceReports      = "reports"
+	APIServiceTransactions = "transactions"
 )
 
 // RawRequest sends an authenticated request to one of Bitwave's known API
@@ -100,6 +102,10 @@ func (c *Client) rawServiceBase(service string) (string, error) {
 	switch strings.ToLower(strings.TrimSpace(service)) {
 	case "", APIServiceCore:
 		return validateRawServiceBase(c.BaseURL, service)
+	case APIServiceAPI2:
+		return validateRawServiceBase(c.API2URL, service)
+	case APIServiceTransactions:
+		return validateRawServiceBase(c.TransactionsURL, service)
 	case APIServiceApp:
 		endpoint = c.RulesMutationURL
 	case APIServicePlatform:
@@ -107,7 +113,7 @@ func (c *Client) rawServiceBase(service string) (string, error) {
 	case APIServiceReports:
 		endpoint = c.RulesQueryURL
 	default:
-		return "", fmt.Errorf("unsupported API service %q (use core, app, platform, or reports)", service)
+		return "", fmt.Errorf("unsupported API service %q (use core, api2, app, platform, reports, or transactions)", service)
 	}
 	parsed, err := url.Parse(endpoint)
 	if err != nil || parsed.Scheme == "" || parsed.Host == "" {

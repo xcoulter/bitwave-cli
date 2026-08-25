@@ -196,7 +196,9 @@ func runAdminOperation(cmd *cobra.Command, operation adminOperation, args []stri
 	service := operation.Service
 	method := operation.Method
 	if operation.Protocol == adminGraphQL {
-		service = orgreports.APIServiceApp
+		if service == "" {
+			service = orgreports.APIServiceApp
+		}
 		method = http.MethodPost
 		path, err = graphQLEndpointPath(service)
 		if err != nil {
