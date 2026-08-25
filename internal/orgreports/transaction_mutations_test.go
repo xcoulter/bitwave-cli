@@ -42,6 +42,30 @@ func TestTransactionMutationContracts(t *testing.T) {
 				t.Fatalf("body = %#v", body)
 			}
 			w.WriteHeader(http.StatusNoContent)
+		case "/orgs/org-1/transactions/txn-review":
+			if r.Method != http.MethodGet {
+				t.Fatalf("method = %s", r.Method)
+			}
+			_, _ = w.Write([]byte(`{"state":{"state":"open-needs-review","txn":{"transactionId":"txn-review"},"needsReview":{"pendingTxnLines":[]}}}`))
+		case "/v3/orgs/org-1/transactions/resolve":
+			if r.Method != http.MethodPut {
+				t.Fatalf("request = %s %s", r.Method, r.URL.String())
+			}
+			var body TransactionReviewRequest
+			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+				t.Fatal(err)
+			}
+			if len(body.Transactions) != 1 || body.Transactions[0].TransactionID != "txn-review" {
+				t.Fatalf("body = %#v", body)
+			}
+			if r.URL.Query().Get("action") == TransactionReviewAccept {
+				w.WriteHeader(http.StatusNoContent)
+				return
+			}
+			if r.URL.Query().Get("action") != TransactionReviewIgnore {
+				t.Fatalf("action = %q", r.URL.Query().Get("action"))
+			}
+			_, _ = w.Write([]byte(`{"success":true,"processed":1,"successCount":1,"failed":[]}`))
 		case "/v3/orgs/org-1/transactions":
 			if r.Method != http.MethodPut {
 				t.Fatalf("method = %s", r.Method)
@@ -59,6 +83,23 @@ func TestTransactionMutationContracts(t *testing.T) {
 				t.Fatalf("body = %#v", body)
 			}
 			_, _ = w.Write([]byte(`{"transactions":[{"id":"txn-2"}],"nextToken":"next-1"}`))
+		case "/v3/orgs/org-1/transactions/count":
+			if r.Method != http.MethodPost {
+				t.Fatalf("method = %s", r.Method)
+			}
+			var body TransactionOverviewRequest
+			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+				t.Fatal(err)
+			}
+			if len(body.Filters.States) != 1 || body.Filters.States[0] != "failed-to-price" {
+				t.Fatalf("body = %#v", body)
+			}
+			_, _ = w.Write([]byte(`{"count":7}`))
+		case "/orgs/org-1/transactions/summary_v2":
+			if r.Method != http.MethodPost {
+				t.Fatalf("method = %s", r.Method)
+			}
+			_, _ = w.Write([]byte(`{"needsCategorization":10,"toBeReconciled":4,"needsReview":2,"all":20,"firstRecordDate":"2026-01-01T00:00:00Z"}`))
 		case "/txns/orgs/org-1/transactions":
 			if r.Method != http.MethodPost || r.URL.Query().Get("immediate") != "true" {
 				t.Fatalf("request = %s %s", r.Method, r.URL.String())
@@ -129,6 +170,18 @@ func TestTransactionMutationContracts(t *testing.T) {
 	if err := c.CategorizeTransaction(ctx, "org-1", "txn-1", json.RawMessage(`{"type":"trade"}`)); err != nil {
 		t.Fatal(err)
 	}
+	review, err := c.TransactionReviewDetail(ctx, "org-1", "txn-review")
+	if err != nil || !json.Valid(review) {
+		t.Fatalf("review = %s err=%v", review, err)
+	}
+	resolved, err := c.ResolveTransactionReviews(ctx, "org-1", TransactionReviewIgnore, []string{"txn-review"})
+	if err != nil || !resolved.Success || resolved.SuccessCount != 1 {
+		t.Fatalf("resolved = %#v err=%v", resolved, err)
+	}
+	accepted, err := c.ResolveTransactionReviews(ctx, "org-1", TransactionReviewAccept, []string{"txn-review"})
+	if err != nil || !accepted.Success || accepted.SuccessCount != 1 {
+		t.Fatalf("accepted = %#v err=%v", accepted, err)
+	}
 	bulk, err := c.BulkCategorizeTransactions(ctx, "org-1", json.RawMessage(`{"categorization":{"accountingConnectionId":"ac-1","trade":{}}}`))
 	if err != nil || len(bulk) != 1 || !bulk[0].Success {
 		t.Fatalf("bulk = %#v err=%v", bulk, err)
@@ -156,6 +209,14 @@ func TestTransactionMutationContracts(t *testing.T) {
 	search, err := c.SearchTransactions(ctx, "org-1", TransactionSearchRequest{Limit: 25, Filters: TransactionExportFilters{FromAddresses: []string{"0xabc"}}})
 	if err != nil || len(search.Transactions) != 1 || search.NextToken != "next-1" {
 		t.Fatalf("search = %#v err=%v", search, err)
+	}
+	count, err := c.TransactionCount(ctx, "org-1", TransactionOverviewRequest{Filters: TransactionExportFilters{States: []string{"failed-to-price"}}})
+	if err != nil || count != 7 {
+		t.Fatalf("count = %d err=%v", count, err)
+	}
+	overview, err := c.TransactionOverview(ctx, "org-1", TransactionOverviewRequest{})
+	if err != nil || overview.All != 20 || overview.NeedsCategorization != 10 || overview.FirstRecordDate == nil {
+		t.Fatalf("overview = %#v err=%v", overview, err)
 	}
 	created, err := c.CreateTransactions(ctx, "org-1", []CreateTransaction{{SystemID: "source-1", Time: "2026-08-10T10:00:00Z", AccountID: "wallet-a", Amount: "1.25", AmountTicker: "ETH", TransactionType: "deposit"}})
 	if err != nil || !json.Valid(created) {

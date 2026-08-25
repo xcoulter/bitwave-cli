@@ -58,23 +58,38 @@ type TransactionDateRange struct {
 	To   string `json:"to,omitempty"`
 }
 
+type TransactionAmountRange struct {
+	From *float64 `json:"from,omitempty"`
+	To   *float64 `json:"to,omitempty"`
+}
+
 type TransactionExportFilters struct {
-	DateRange                   *TransactionDateRange `json:"dateRange,omitempty"`
-	WalletIDs                   []string              `json:"walletIds,omitempty"`
-	SubsidiaryIDs               []string              `json:"subsidiaryIds,omitempty"`
-	AssetIDs                    []string              `json:"assetIds,omitempty"`
-	TransactionTypes            []string              `json:"transactionTypes,omitempty"`
-	States                      []string              `json:"states,omitempty"`
-	CategorizationStatuses      []string              `json:"categorizationStatuses,omitempty"`
-	ReconciliationStatuses      []string              `json:"reconciliationStatuses,omitempty"`
-	IgnoredStatuses             []string              `json:"ignoredStatuses,omitempty"`
-	SearchTokens                []string              `json:"searchTokens,omitempty"`
-	TransactionIDs              []string              `json:"transactionIds,omitempty"`
-	FromAddresses               []string              `json:"fromAddresses,omitempty"`
-	ToAddresses                 []string              `json:"toAddresses,omitempty"`
-	Addresses                   []string              `json:"addresses,omitempty"`
-	Operations                  []string              `json:"operations,omitempty"`
-	IncludeCombinedTransactions bool                  `json:"includeCombinedTransactions,omitempty"`
+	DateRange                   *TransactionDateRange   `json:"dateRange,omitempty"`
+	AmountRange                 *TransactionAmountRange `json:"amountRange,omitempty"`
+	FMVAmountRange              *TransactionAmountRange `json:"fmvAmountRange,omitempty"`
+	WalletIDs                   []string                `json:"walletIds,omitempty"`
+	SubsidiaryIDs               []string                `json:"subsidiaryIds,omitempty"`
+	AssetIDs                    []string                `json:"assetIds,omitempty"`
+	AmountCurrencyNames         []string                `json:"amountCurrencyNames,omitempty"`
+	TransactionTypes            []string                `json:"transactionTypes,omitempty"`
+	MethodIDs                   []string                `json:"methodIds,omitempty"`
+	Stage                       string                  `json:"stage,omitempty"`
+	States                      []string                `json:"states,omitempty"`
+	CategorizationStatuses      []string                `json:"categorizationStatuses,omitempty"`
+	ReconciliationStatuses      []string                `json:"reconciliationStatuses,omitempty"`
+	IgnoredStatuses             []string                `json:"ignoredStatuses,omitempty"`
+	SearchTokens                []string                `json:"searchTokens,omitempty"`
+	TransactionIDs              []string                `json:"transactionIds,omitempty"`
+	FromAddresses               []string                `json:"fromAddresses,omitempty"`
+	ToAddresses                 []string                `json:"toAddresses,omitempty"`
+	Addresses                   []string                `json:"addresses,omitempty"`
+	Operations                  []string                `json:"operations,omitempty"`
+	IncludeCombinedTransactions bool                    `json:"includeCombinedTransactions,omitempty"`
+	IsCombinedParent            *bool                   `json:"isCombinedParent,omitempty"`
+	IsSplitChild                *bool                   `json:"isSplitChild,omitempty"`
+	IsSplitParent               *bool                   `json:"isSplitParent,omitempty"`
+	NeedsReview                 *bool                   `json:"needsReview,omitempty"`
+	Errored                     *bool                   `json:"errored,omitempty"`
 }
 
 type TransactionExportRequest struct {

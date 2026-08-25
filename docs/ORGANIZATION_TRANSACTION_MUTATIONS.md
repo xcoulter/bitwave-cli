@@ -18,6 +18,74 @@ organization. They do not edit the CLI's local ledger.
 
 Always preview a generated mutation before executing it.
 
+## Needs Review analysis and resolution
+
+Start with the organization-wide transaction health summary used by the
+transaction UI and Close Dashboard:
+
+```bash
+bitwave --quiet transaction review summary --org ORG_ID --json
+```
+
+The response includes total, categorized, uncategorized, to-be-reconciled,
+complete, Needs Review, ignored, awaiting-pricing, failed-pricing,
+ready-to-sync, syncing, synced, failed-sync, and marked-synced counts.
+`--from`/`--to`, `--wallet`, and `--subsidiary` narrow the summary without
+downloading transactions.
+
+For follow-up counts across the full product filter surface, use:
+
+```bash
+bitwave --quiet transaction count --org ORG_ID \
+  --wallet "Treasury" --state failed-to-price --json
+```
+
+`transaction count` supports wallet, subsidiary, asset, ticker, type, metadata
+method ID, workflow stage/state, categorization, reconciliation, ignored
+status, transaction ID, from/to/either-side address, operation, amount, FMV,
+date, combined/split, Needs Review, and errored filters. It returns a count and
+the exact filter request, allowing the caller's LLM to choose its own analysis.
+
+Needs Review is separate from the transaction's ignored state. Inspect the
+pending queue without loading the organization's full transaction history:
+
+```bash
+bitwave --quiet transaction review analyze --org ORG_ID --limit 25 --json
+```
+
+Pass one or more transaction IDs to analyze only those records. The compact
+response compares current and pending lines, wallets, and exchange rates,
+preserves full transaction IDs and addresses, and includes the existing
+categorization. It reports factual equivalence fields but does not select an
+accept or ignore action for the caller.
+
+Preview and resolve reviewed IDs:
+
+```bash
+bitwave --quiet transaction review ignore TXN_ID \
+  --org ORG_ID --dry-run --json
+bitwave --quiet transaction review ignore TXN_ID \
+  --org ORG_ID --yes --json
+
+bitwave --quiet transaction review accept TXN_ID \
+  --org ORG_ID --yes --json
+```
+
+`review ignore` dismisses the pending changes and preserves the current
+transaction and categorization. It does **not** ignore the transaction.
+`review accept` applies the pending transaction changes and may remove an
+existing categorization, requiring the transaction to be categorized again.
+
+Endpoints:
+
+```text
+GET /orgs/{orgId}/transactions/{transactionId}
+POST /orgs/{orgId}/transactions/summary_v2
+POST /v3/orgs/{orgId}/transactions/count
+PUT /v3/orgs/{orgId}/transactions/resolve?action=ignore-pending-changes
+PUT /v3/orgs/{orgId}/transactions/resolve?action=accept-pending-changes
+```
+
 ## LLM workflow: find, narrow, preview, confirm
 
 Users do not need to know a transaction hash. `transaction search` accepts the
