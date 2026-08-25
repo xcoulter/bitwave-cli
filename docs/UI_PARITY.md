@@ -49,7 +49,7 @@ where the backend supports them.
 | Inventory views | List/create/edit/delete, update runs, scenarios and management | List/create/delete, trigger update, list update results | Partial |
 | Gain/loss | Scenario runner and reports | Actions report only | Partial |
 | Reports | Balance, transaction export, journal, expanded, rolled-up, ledger, balance check and export history | Balance, Transaction Export and Actions | Partial |
-| Period close | Close configuration and period workflow | None | Missing |
+| Period close | Close configuration and period workflow | Checklist runs/tasks/invocations, templates, certifications/artifacts, inventory-action exports, hard close, and SFTP delivery assignments | Supported |
 | External cost basis | Import and manage external basis | None | Missing |
 | Wrapping and tax strategy | Configure product treatments | None | Missing |
 | Token filtering | Organization token filtering | None | Missing |
@@ -66,7 +66,7 @@ where the backend supports them.
 2. Complete transaction actions, matching, reconciliation, and import workflows.
 3. Complete pricing and inventory management/scenario operations.
 4. Expose every named report and export-history operation.
-5. Add period-close state and system-job observability.
+5. Add remaining system-job observability.
 6. Add AR/AP, data-platform, enterprise administration, and integration flows.
 
 Each slice should be derived from current UI request contracts and shipped with
