@@ -108,6 +108,13 @@ for contact-name lookup, validation behavior, and the `--yes` write step.
 Reports are **asynchronous**: start → poll → fetch. A CLI verb needs to wrap
 that loop.
 
+The full Close Dashboard surface is available under `bitwave close`, including
+checklist runs/tasks, invocations, templates, certifications, task artifacts,
+inventory actions/exports, and SFTP delivery assignments. See
+[`CLOSE_DASHBOARD.md`](CLOSE_DASHBOARD.md). These commands expose Bitwave state
+and operations; Wavie or the operator remains responsible for close sequencing
+and accounting judgment.
+
 ### Inventory
 
 | Op | Endpoint |

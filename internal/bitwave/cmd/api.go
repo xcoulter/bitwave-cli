@@ -69,7 +69,7 @@ func newAPIRequestCmd() *cobra.Command {
 			return runAPIRequest(cmd, args[0], args[1], f)
 		},
 	}
-	cmd.Flags().StringVar(&f.service, "service", orgreports.APIServiceCore, "Bitwave service: core, app, or reports")
+	cmd.Flags().StringVar(&f.service, "service", orgreports.APIServiceCore, "Bitwave service: core, api2, app, platform, reports, or transactions")
 	cmd.Flags().StringVar(&f.orgID, "org", "", "Organization ID override")
 	cmd.Flags().StringVarP(&f.input, "input", "i", "", "JSON request body file (`-` reads stdin)")
 	cmd.Flags().StringVar(&f.data, "data", "", "Inline JSON request body")
@@ -374,12 +374,12 @@ func graphqlResponseError(data []byte) error {
 
 func graphQLEndpointPath(service string) (string, error) {
 	switch strings.ToLower(strings.TrimSpace(service)) {
-	case orgreports.APIServiceApp, orgreports.APIServiceCore:
+	case orgreports.APIServiceApp, orgreports.APIServiceCore, orgreports.APIServicePlatform:
 		return "/graphql", nil
 	case orgreports.APIServiceReports:
 		return "/graphql-reports", nil
 	default:
-		return "", fmt.Errorf("unsupported GraphQL service %q (use app, reports, or core)", service)
+		return "", fmt.Errorf("unsupported GraphQL service %q (use app, platform, reports, or core)", service)
 	}
 }
 

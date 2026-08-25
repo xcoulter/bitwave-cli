@@ -12,6 +12,9 @@ import (
 const (
 	TransactionStateIgnore   = "ignore"
 	TransactionStateUnignore = "un-ignore"
+
+	TransactionReviewAccept = "accept-pending-changes"
+	TransactionReviewIgnore = "ignore-pending-changes"
 )
 
 type BulkStateRequest struct {
@@ -38,6 +41,14 @@ type BulkStateResponse struct {
 		Status        string `json:"status"`
 		Error         string `json:"error,omitempty"`
 	} `json:"transactions,omitempty"`
+}
+
+type TransactionReviewRequest struct {
+	Transactions []TransactionReviewItem `json:"transactions"`
+}
+
+type TransactionReviewItem struct {
+	TransactionID string `json:"transactionId"`
 }
 
 type BulkCategorizeResult struct {
@@ -136,6 +147,19 @@ type TransactionSearchResponse struct {
 	AssetIDs     []string          `json:"assetIds,omitempty"`
 }
 
+type TransactionOverviewRequest struct {
+	Timezone string                   `json:"timezone,omitempty"`
+	Filters  TransactionExportFilters `json:"filters"`
+}
+
+type TransactionOverviewResponse struct {
+	NeedsCategorization int     `json:"needsCategorization"`
+	ToBeReconciled      int     `json:"toBeReconciled"`
+	NeedsReview         int     `json:"needsReview"`
+	All                 int     `json:"all"`
+	FirstRecordDate     *string `json:"firstRecordDate"`
+}
+
 // CreateTransaction is the public transaction-ingest contract used by the
 // Bitwave transaction UI. Numeric quantities remain strings to avoid losing
 // precision in automation and LLM tool calls.
@@ -175,6 +199,26 @@ type InternalTransferInput struct {
 func (c *Client) SearchTransactions(ctx context.Context, orgID string, input TransactionSearchRequest) (*TransactionSearchResponse, error) {
 	var response TransactionSearchResponse
 	path := "/v3/orgs/" + url.PathEscape(orgID) + "/transactions/search"
+	if err := c.doJSON(ctx, http.MethodPost, path, input, &response); err != nil {
+		return nil, err
+	}
+	return &response, nil
+}
+
+func (c *Client) TransactionCount(ctx context.Context, orgID string, input TransactionOverviewRequest) (int, error) {
+	var response struct {
+		Count int `json:"count"`
+	}
+	path := "/v3/orgs/" + url.PathEscape(orgID) + "/transactions/count"
+	if err := c.doJSON(ctx, http.MethodPost, path, input, &response); err != nil {
+		return 0, err
+	}
+	return response.Count, nil
+}
+
+func (c *Client) TransactionOverview(ctx context.Context, orgID string, input TransactionOverviewRequest) (*TransactionOverviewResponse, error) {
+	var response TransactionOverviewResponse
+	path := "/orgs/" + url.PathEscape(orgID) + "/transactions/summary_v2"
 	if err := c.doJSON(ctx, http.MethodPost, path, input, &response); err != nil {
 		return nil, err
 	}
@@ -243,6 +287,55 @@ func (c *Client) Transaction(ctx context.Context, orgID, transactionID string) (
 		return nil, fmt.Errorf("transaction response was not valid JSON")
 	}
 	return json.RawMessage(data), nil
+}
+
+// TransactionReviewDetail returns the state representation used by the
+// product's Needs Review panel. Unlike the compact v3 read, it includes the
+// current transaction, pending lines, pending exchange rates, and existing
+// categorization needed to make a review decision.
+func (c *Client) TransactionReviewDetail(ctx context.Context, orgID, transactionID string) (json.RawMessage, error) {
+	path := "/orgs/" + url.PathEscape(orgID) + "/transactions/" + url.PathEscape(transactionID)
+	data, err := c.do(ctx, http.MethodGet, path, nil)
+	if err != nil {
+		return nil, err
+	}
+	if !json.Valid(data) {
+		return nil, fmt.Errorf("transaction review response was not valid JSON")
+	}
+	return json.RawMessage(data), nil
+}
+
+// ResolveTransactionReviews applies or dismisses pending transaction changes.
+// Dismissing pending changes is intentionally separate from ignoring the
+// transaction itself.
+func (c *Client) ResolveTransactionReviews(ctx context.Context, orgID, action string, transactionIDs []string) (*BulkStateResponse, error) {
+	if action != TransactionReviewAccept && action != TransactionReviewIgnore {
+		return nil, fmt.Errorf("unsupported transaction review action %q", action)
+	}
+	if len(transactionIDs) == 0 {
+		return nil, fmt.Errorf("at least one transaction id is required")
+	}
+	items := make([]TransactionReviewItem, 0, len(transactionIDs))
+	for _, transactionID := range transactionIDs {
+		items = append(items, TransactionReviewItem{TransactionID: transactionID})
+	}
+	var response BulkStateResponse
+	query := url.Values{"action": {action}}
+	path := "/v3/orgs/" + url.PathEscape(orgID) + "/transactions/resolve?" + query.Encode()
+	data, err := c.do(ctx, http.MethodPut, path, TransactionReviewRequest{Transactions: items})
+	if err != nil {
+		return nil, err
+	}
+	if strings.TrimSpace(string(data)) == "" {
+		response.Success = true
+		response.Processed = len(items)
+		response.SuccessCount = len(items)
+		return &response, nil
+	}
+	if err := json.Unmarshal(data, &response); err != nil {
+		return nil, fmt.Errorf("decode transaction review response: %w", err)
+	}
+	return &response, nil
 }
 
 // TransactionWithAccountingDetails uses the legacy read representation because

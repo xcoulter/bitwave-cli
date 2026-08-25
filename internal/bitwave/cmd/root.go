@@ -60,11 +60,12 @@ locally against plain-text journal files (compatible with hledger, ledger,
 and beancount), and any workspace can be shared or persisted in the
 Bitwave cloud when more than one person — or agent — needs it.
 
-Every bitwave command operates on a workspace — a directory containing a
+Ledger commands operate on a workspace — a directory containing a
 .bitwave.toml marker plus one or more .journal files. Run ` + "`bitwave init`" + ` in the
-directory you want the workspace to live in BEFORE any other command. bitwave
-walks up from the cwd to find the workspace marker, so you can run
-commands from any subdirectory once it exists.
+directory where you want to use the plain-text ledger. Organization-product
+commands such as ` + "`report`" + `, ` + "`transaction`" + `, ` + "`inventory`" + `, ` + "`pricing`" + `,
+` + "`close`" + `, and ` + "`org admin`" + ` use the selected Bitwave organization and do
+not require a ledger workspace.
 
 Modes:
   - Local (default): files live on disk. No auth needed. ` + "`bitwave share`" + ` also
@@ -72,10 +73,8 @@ Modes:
     to adopt the workspace).
   - Cloud (` + "`bitwave init --cloud`" + `): backed by Bitwave's workspace ledger
     service under your org. Requires ` + "`bitwave auth login`" + ` and
-    ` + "`bitwave org use`" + `. Note: this is the workspace ledger, NOT the
-    Bitwave platform API (transactions, categorization, inventory, close) —
-    that is a separate surface with client id/key auth, not yet driven by
-    this CLI.
+    ` + "`bitwave org use`" + `. The workspace ledger remains distinct from the
+    Bitwave organization-product commands listed above.
 
 Auth (used by cloud-mode commands; priority order):
   - BITWAVE_AGENT_TOKEN env  Well-known agent identity
@@ -179,10 +178,9 @@ Tip: run ` + "`bitwave <command> --help`" + ` on any subcommand to see flags + e
 	addInGroup(groupWorkflows, newOrgInvoicesCmd())
 	addInGroup(groupWorkflows, newOrgRulesCmd())
 	addInGroup(groupWorkflows, newOrgInventoryCmd())
+	addInGroup(groupWorkflows, newOrgPricingCmd())
 	addInGroup(groupWorkflows, newAPICmd())
-	// Period-close is parked until the orchestrator is ported into this CLI;
-	// re-register to bring `bitwave close` back (see close.go).
-	// addInGroup(groupWorkflows, newCloseCmd())
+	addInGroup(groupWorkflows, newCloseCmd())
 	addInGroup(groupWorkflows, newShareCmd())
 	addInGroup(groupWorkflows, newSharesCmd())
 

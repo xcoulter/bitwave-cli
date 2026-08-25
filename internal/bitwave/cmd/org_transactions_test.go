@@ -126,3 +126,94 @@ func TestCompactTransactionAccountingDetailsOmitsLegacyNoise(t *testing.T) {
 		t.Fatalf("view = %s", encoded)
 	}
 }
+
+func TestAnalyzeTransactionReviewReportsEquivalentFacts(t *testing.T) {
+	raw := json.RawMessage(`{
+  "state": {
+    "state": "open-needs-review",
+    "txn": {
+      "transactionId": "BSC.0xabc",
+      "txnType": "trade",
+      "walletIds": ["wallet-1"],
+      "txnLines": [
+        {"operation":"DEPOSIT","amount":{"currencyId":"USDC","value":"4.0"},"walletId":"wallet-1","from":"from-a","to":"to-a","exchangeRate":{"from":"USDC","to":"USD","rate":"1.00"}},
+        {"operation":"WITHDRAW","amount":{"currencyId":"TOKEN","value":"2"},"walletId":"wallet-1","from":"from-b","to":"to-b","exchangeRate":{"from":"TOKEN","to":"USD","rate":"2"}}
+      ]
+    },
+    "needsReview": {
+      "pendingWalletIds": ["wallet-1"],
+      "pendingTxnLines": [
+        {"operation":"WITHDRAW","amount":{"currencyId":"TOKEN","value":"2.0"},"walletId":"wallet-1","from":"from-b","to":"to-b","exchangeRate":{"from":"TOKEN","to":"USD","rate":"2.00"}},
+        {"operation":"DEPOSIT","amount":{"currencyId":"USDC","value":"4"},"walletId":"wallet-1","from":"from-a","to":"to-a","exchangeRate":{"from":"USDC","to":"USD","rate":"1"}}
+      ],
+      "pendingExchangeRates": [
+        {"changeReason":"new-pricing-provided","changeAuditLog":"New pricing.","exchangeRate":{"from":"USDC","to":"USD","rate":"1"}},
+        {"changeReason":"new-pricing-provided","changeAuditLog":"New pricing.","exchangeRate":{"from":"TOKEN","to":"USD","rate":"2.0"}}
+      ]
+    },
+    "categorization": {
+      "categorizationMethod": "rule",
+      "categorizeByRuleId": "rule-1",
+      "categorizationDetails": {"type":"trade"}
+    }
+  }
+}`)
+	analysis, err := analyzeTransactionReview(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !analysis.LinesEquivalent || !analysis.RatesEquivalent || !analysis.WalletsEquivalent {
+		t.Fatalf("analysis = %#v", analysis)
+	}
+	if analysis.CategorizationType != "trade" || analysis.RuleID != "rule-1" {
+		t.Fatalf("analysis = %#v", analysis)
+	}
+}
+
+func TestAnalyzeTransactionReviewReportsRateChange(t *testing.T) {
+	raw := json.RawMessage(`{
+  "state": {
+    "state":"open-needs-review",
+    "txn":{"transactionId":"BSC.0xdef","walletIds":["wallet-1"],"txnLines":[{"operation":"DEPOSIT","amount":{"currencyId":"TOKEN","value":"1"},"walletId":"wallet-1","exchangeRate":{"from":"TOKEN","to":"USD","rate":"2"}}]},
+    "needsReview":{"pendingTxnLines":[{"operation":"DEPOSIT","amount":{"currencyId":"TOKEN","value":"1"},"walletId":"wallet-1","exchangeRate":{"from":"TOKEN","to":"USD","rate":"3"}}],"pendingExchangeRates":[{"changeReason":"new-pricing-provided","exchangeRate":{"from":"TOKEN","to":"USD","rate":"3"}}]}
+  }
+}`)
+	analysis, err := analyzeTransactionReview(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if analysis.RatesEquivalent || analysis.LinesEquivalent {
+		t.Fatalf("analysis = %#v", analysis)
+	}
+}
+
+func TestTransactionReviewIgnoreDryRunUsesResolveEndpoint(t *testing.T) {
+	cmd := newTransactionReviewResolveCmd("ignore", orgreports.TransactionReviewIgnore)
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	cmd.SetArgs([]string{"BSC.0xabc", "--org", "org-1", "--dry-run", "--json"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out.String(), `action=ignore-pending-changes`) || !strings.Contains(out.String(), `"transactionId": "BSC.0xabc"`) {
+		t.Fatalf("output = %s", out.String())
+	}
+}
+
+func TestTransactionCountRangesPreserveZeroBounds(t *testing.T) {
+	cmd := newCountOrgTransactionsCmd()
+	if err := cmd.Flags().Set("amount-min", "0"); err != nil {
+		t.Fatal(err)
+	}
+	if err := cmd.Flags().Set("amount-max", "10.5"); err != nil {
+		t.Fatal(err)
+	}
+	rangeValue, err := transactionCountRange(cmd, "amount-min", "0", "amount-max", "10.5")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if rangeValue == nil || rangeValue.From == nil || *rangeValue.From != 0 || rangeValue.To == nil || *rangeValue.To != 10.5 {
+		t.Fatalf("range = %#v", rangeValue)
+	}
+}

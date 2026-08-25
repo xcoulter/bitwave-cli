@@ -14,7 +14,7 @@ import (
 
 func newOrgInventoryCmd() *cobra.Command {
 	cmd := &cobra.Command{Use: "inventory", Short: "Manage Bitwave organization inventory views"}
-	cmd.AddCommand(newOrgInventoryListCmd(), newOrgInventoryCreateCmd(), newOrgInventoryUpdateCmd(), newOrgInventoryUpdatesCmd(), newOrgInventoryCancelCmd(), newOrgInventoryDeleteCmd())
+	cmd.AddCommand(newOrgInventoryListCmd(), newOrgInventoryCreateCmd(), newOrgInventoryUpdateCmd(), newOrgInventoryUpdatesCmd(), newOrgInventoryCancelCmd(), newOrgInventoryDeleteCmd(), newOrgInventoryAPICmd())
 	return cmd
 }
 

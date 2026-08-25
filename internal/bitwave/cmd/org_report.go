@@ -52,6 +52,7 @@ organization, but do not require a .bitwave.toml workspace.`,
 	cmd.AddCommand(newOrgBalanceReportCmd())
 	cmd.AddCommand(newTransactionExportCmd())
 	cmd.AddCommand(newActionsReportCmd())
+	cmd.AddCommand(newReportCenterCmd())
 	cmd.AddCommand(newInventoryViewsCmd())
 	cmd.AddCommand(newReportOptionsCmd())
 	return cmd
@@ -70,12 +71,14 @@ func newOrgReportListCmd() *cobra.Command {
 						{"name": "balance", "label": "Balance Report", "optionsCommand": "bitwave report options balance"},
 						{"name": "transaction-export", "label": "Transaction Export", "aliases": []string{"transactions-export", "txn-export"}, "optionsCommand": "bitwave report options transaction-export"},
 						{"name": "actions", "label": "Actions", "optionsCommand": "bitwave report options actions"},
+						{"name": "center", "label": "Reports Center", "catalogCommand": "bitwave report center catalog --json"},
 					},
 				})
 			}
 			_, _ = fmt.Fprintln(cmd.OutOrStdout(), "balance             Balance Report (wallet or asset grouping)")
 			_, _ = fmt.Fprintln(cmd.OutOrStdout(), "transaction-export  Transaction Export (organization transactions)")
 			_, _ = fmt.Fprintln(cmd.OutOrStdout(), "actions             Actions (selected inventory view)")
+			_, _ = fmt.Fprintln(cmd.OutOrStdout(), "center              All Reports Center endpoints")
 			return nil
 		},
 	}
