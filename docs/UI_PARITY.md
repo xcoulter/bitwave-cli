@@ -43,7 +43,7 @@ where the backend supports them.
 | Categories | List/export/create, enable/disable, disable all | List, create/import, enable/disable and disable all; CSV export missing | Partial |
 | Contacts | List/export/create, enable/disable, defaults, connection and address mappings | List, create, complete-input update, enable/disable and disable all; CSV export missing | Partial |
 | Accounting connections | List, configure, synchronize and manage providers | Full Admin lifecycle plus complete NetSuite provider settings | Supported |
-| Imports and data load | Transaction import, data import workflows and reports | None | Missing |
+| Imports and data load | Manual transaction imports plus advanced data-import workflows and reports | Manual transaction CSV create/upload/validate/preview/run, history/status polling, paginated staged errors and error CSV; advanced `/importv2` and `/importv3` workflows remain missing | Partial |
 | Data platform | Explore, sources, feeds, executions, schemas, transforms, rollups and reconciliation | Wallet Babel rollup configuration only | Partial |
 | Pricing | History, rules, rate tables, contexts and routes | None | Missing |
 | Inventory views | List/create/edit/delete, update runs, scenarios and management | List/create/delete, trigger update, list update results | Partial |
@@ -67,7 +67,7 @@ The complete Administration command catalog is documented in
 
 1. Complete foundational CRUD and exports for categories, contacts, wallets,
    subsidiaries, users, and accounting resources.
-2. Complete transaction actions, matching, reconciliation, and import workflows.
+2. Complete transaction actions, matching, reconciliation, and advanced data-import workflows.
 3. Complete pricing and inventory management/scenario operations.
 4. Expose every named report and export-history operation.
 5. Add remaining system-job observability.
