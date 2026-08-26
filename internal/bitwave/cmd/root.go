@@ -64,7 +64,7 @@ Ledger commands operate on a workspace — a directory containing a
 .bitwave.toml marker plus one or more .journal files. Run ` + "`bitwave init`" + ` in the
 directory where you want to use the plain-text ledger. Organization-product
 commands such as ` + "`report`" + `, ` + "`transaction`" + `, ` + "`inventory`" + `, ` + "`pricing`" + `,
-` + "`close`" + `, and ` + "`org admin`" + ` use the selected Bitwave organization and do
+` + "`import`" + `, ` + "`close`" + `, and ` + "`org admin`" + ` use the selected Bitwave organization and do
 not require a ledger workspace.
 
 Modes:
@@ -179,6 +179,7 @@ Tip: run ` + "`bitwave <command> --help`" + ` on any subcommand to see flags + e
 	addInGroup(groupWorkflows, newOrgRulesCmd())
 	addInGroup(groupWorkflows, newOrgInventoryCmd())
 	addInGroup(groupWorkflows, newOrgPricingCmd())
+	addInGroup(groupWorkflows, newOrgImportsCmd())
 	addInGroup(groupWorkflows, newAPICmd())
 	addInGroup(groupWorkflows, newCloseCmd())
 	addInGroup(groupWorkflows, newShareCmd())

@@ -326,6 +326,44 @@ manual Bitwave connection and can list, create, or import manual chart accounts.
 See
 [`docs/ORGANIZATION_ACCOUNTING.md`](docs/ORGANIZATION_ACCOUNTING.md).
 
+### Manual transaction CSV imports
+
+The organization import command mirrors Bitwave's **Manual Transaction
+Imports** page and can submit a user-provided CSV with one confirmation:
+
+```sh
+bitwave import template
+bitwave import transactions ./transactions.csv --mode auto --json
+bitwave import transactions ./transactions.csv --mode direct --yes --json
+bitwave import transactions ./transactions.csv --mode staged --yes --json
+```
+
+`auto` returns a machine-readable direct-versus-staged plan without changing the
+organization. Direct mode is optimized for clean canonical rows; staged mode
+creates an import, uploads the CSV, validates every row, and only creates
+transactions when validation passes. It then waits for the server-side run and
+returns its status, warning/error counts, and partial-import counts.
+`bitwave import template --json` publishes every supported CSV column
+so callers can preserve optional source data such as full addresses, hashes,
+fees, memo, description, and grouping fields. Use `--validate-only` to stop
+before commit. For a split asynchronous workflow, use `validate --no-wait` and
+resume with `status`/`run`. Lifecycle commands are also available separately:
+
+```sh
+bitwave import list
+bitwave import status IMPORT_ID --watch
+bitwave import preview IMPORT_ID                  # legacy-engine rows; empty on Temporal v2
+bitwave import errors IMPORT_ID --stage validate --format csv --out errors.csv
+bitwave import upload ./transactions.csv --yes
+bitwave import validate IMPORT_ID --yes
+bitwave import run IMPORT_ID --yes
+```
+
+Run failures are not atomic: some rows may already have created transactions.
+Review `rowsImported`, `rowsTotal`, run-stage errors, and the resulting
+transactions before retrying. See
+[`docs/ORGANIZATION_IMPORTS.md`](docs/ORGANIZATION_IMPORTS.md).
+
 ---
 
 ## Reports
