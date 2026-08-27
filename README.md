@@ -102,6 +102,24 @@ single `run_bitwave_cli` tool. The SDK accepts a structured argument array,
 defaults an empty invocation to `bitwave --help`, and executes without a shell.
 It does not install or run a local HTTP bridge.
 
+## Connect to a Bitwave organization
+
+When a user supplies an organization ID, connect it in one command:
+
+```sh
+bitwave connect ORG_ID
+```
+
+This opens Bitwave login when authentication is needed, verifies access to the
+exact organization, and saves it as active. An agent must not treat anonymous
+local mode as successful setup when the user requested an organization.
+
+Run the command on the same machine as the user's browser so the OAuth callback
+can reach the CLI. Remote agents can instead use `BITWAVE_AGENT_TOKEN` when one
+has been provisioned.
+
+---
+
 ## Quickstart — local workspace
 
 ```sh

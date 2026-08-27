@@ -150,6 +150,7 @@ Tip: run ` + "`bitwave <command> --help`" + ` on any subcommand to see flags + e
 	_ = root.PersistentFlags().MarkHidden("auth-url")
 
 	addInGroup(groupAuth, newAuthCmd())
+	addInGroup(groupAuth, newConnectCmd())
 	addInGroup(groupAccount, newOrgCmd())
 	addInGroup(groupAccount, newWorkspaceCmd())
 	addInGroup(groupAccount, newJournalCmd())
