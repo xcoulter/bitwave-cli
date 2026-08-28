@@ -76,10 +76,12 @@ Modes:
     ` + "`bitwave org use`" + `. The workspace ledger remains distinct from the
     Bitwave organization-product commands listed above.
 
-Auth (used by cloud-mode commands; priority order):
-  - BITWAVE_AGENT_TOKEN env  Well-known agent identity
-  - bitwave auth login           Human PKCE browser flow
-  - bitwave auth delegate        Request delegated access from a user
+Connect to a Bitwave organization:
+  bitwave connect ORG_ID
+
+This is the normal setup path. It opens browser login when needed, verifies the
+requested organization, and saves it as active. Organization-product commands
+do not require a ledger workspace.
 
 Operating context is printed to stderr before every command as a one-line
 banner: ` + "`bitwave: workspace=... | org=... | identity=...`" + `. Suppress with

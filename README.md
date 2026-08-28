@@ -1,5 +1,12 @@
 # bitwave — agent-first accounting, local or cloud
 
+> **Using an AI assistant?** Give it this repository URL and your Bitwave
+> organization ID. The assistant should install the released CLI and run
+> `bitwave connect ORG_ID`. That single command handles normal browser login,
+> verifies the requested organization, and saves it as active. It must not
+> leave an organization request in anonymous mode or ask you to choose among
+> unfinished authentication methods.
+
 `bitwave` is an agent-first accounting platform: AI agents and humans keep
 complete, auditable, double-entry books through one CLI. Every command is
 non-interactive, every output is parseable, and every action is
@@ -78,6 +85,12 @@ Installs the latest release to `~/.local/bin` after verifying its
 checksum. Set `BITWAVE_VERSION=v0.x.y` / `BITWAVE_INSTALL_DIR=...` to
 override.
 
+Install and connect to an organization in one flow:
+
+```sh
+curl -fsSL https://cli.bitwave.io/install.sh | sh -s -- --org ORG_ID
+```
+
 ### Go
 
 ```sh
@@ -116,7 +129,8 @@ local mode as successful setup when the user requested an organization.
 
 Run the command on the same machine as the user's browser so the OAuth callback
 can reach the CLI. Remote agents can instead use `BITWAVE_AGENT_TOKEN` when one
-has been provisioned.
+has already been provisioned. Normal users should not be asked to choose
+anonymous mode, delegation, or OAuth client credentials.
 
 ---
 

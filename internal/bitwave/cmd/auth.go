@@ -27,20 +27,17 @@ func newAuthLoginCmd() *cobra.Command {
 	var clientID, clientSecret string
 	cmd := &cobra.Command{
 		Use:   "login",
-		Short: "Sign in via PKCE browser flow (or client credentials)",
+		Short: "Sign in via the Bitwave browser flow",
 		Long: `Sign in to Bitwave.
 
-Default: browser-based PKCE flow.
+The normal organization setup command is ` + "`bitwave connect ORG_ID`" + `,
+which invokes this browser flow when needed and then verifies and selects the
+requested organization.
 
-For headless / CI use, prefer the BITWAVE_AGENT_TOKEN env var (issued by
-` + "`bitwave auth agent create`" + `). Falling back to OAuth client credentials is
-also supported via --client-id / --client-secret (also reads BITWAVE_CLIENT_ID
-and BITWAVE_CLIENT_SECRET).
-
-NOTE: this signs into the auth service used by the workspace ledger. It is
-NOT the Bitwave platform's client id / client key model (api.bitwave.io
-/v2/oauth/token) — platform integration is a separate, forthcoming surface
-(see docs/PLATFORM-INTEGRATION.md).
+For headless or managed environments, an already-provisioned
+BITWAVE_AGENT_TOKEN can be used. OAuth client credentials remain available as
+an advanced compatibility path through --client-id / --client-secret, but
+normal users should not be asked to choose or create them.
 
 Tokens land in ~/.bitwave/credentials.json and are auto-refreshed.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
@@ -107,9 +104,10 @@ func newAuthStatusCmd() *cobra.Command {
 // pointing at what would happen.
 func newAuthDelegateCmd() *cobra.Command {
 	return &cobra.Command{
-		Use:   "delegate <email>",
-		Short: "Request delegated access from a user (spin-waits on email approval)",
-		Args:  cobra.ExactArgs(1),
+		Use:    "delegate <email>",
+		Short:  "Request delegated access from a user (spin-waits on email approval)",
+		Hidden: true,
+		Args:   cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("auth delegate is not yet implemented (server-side delegation flow is pending). Email that would be contacted: %s", args[0])
 		},
@@ -118,8 +116,9 @@ func newAuthDelegateCmd() *cobra.Command {
 
 func newAuthResumeCmd() *cobra.Command {
 	return &cobra.Command{
-		Use:   "resume",
-		Short: "Resume a pending login or delegation flow",
+		Use:    "resume",
+		Short:  "Resume a pending login or delegation flow",
+		Hidden: true,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			return fmt.Errorf("auth resume is not yet implemented (no pending-flow store on this client)")
 		},
@@ -128,8 +127,9 @@ func newAuthResumeCmd() *cobra.Command {
 
 func newAuthAgentCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "agent",
-		Short: "Manage well-known agent identities (issued tokens)",
+		Use:    "agent",
+		Short:  "Manage well-known agent identities (issued tokens)",
+		Hidden: true,
 	}
 	cmd.AddCommand(&cobra.Command{
 		Use:   "create --name <n> [--workspace <id>]",
