@@ -2,7 +2,7 @@
 
 > **Using an AI assistant?** Give it this repository URL and your Bitwave
 > organization ID. The assistant should install the released CLI and run
-> `bitwave connect ORG_ID`. That single command handles normal browser login,
+> `bitwave auth login --orgId ORG_ID`. That command handles browser login,
 > verifies the requested organization, and saves it as active. It must not
 > leave an organization request in anonymous mode or ask you to choose among
 > unfinished authentication methods.
@@ -115,17 +115,22 @@ single `run_bitwave_cli` tool. The SDK accepts a structured argument array,
 defaults an empty invocation to `bitwave --help`, and executes without a shell.
 It does not install or run a local HTTP bridge.
 
-## Connect to a Bitwave organization
+## Sign in to Bitwave
 
-When a user supplies an organization ID, connect it in one command:
+The normal interactive flow signs in and then asks which organization to use:
 
 ```sh
-bitwave connect ORG_ID
+bitwave auth login
 ```
 
-This opens Bitwave login when authentication is needed, verifies access to the
-exact organization, and saves it as active. An agent must not treat anonymous
-local mode as successful setup when the user requested an organization.
+When a user gives an agent an organization ID, the agent should skip the picker:
+
+```sh
+bitwave auth login --orgId ORG_ID
+```
+
+This verifies the exact organization and saves it as active. An agent must not
+treat anonymous local mode as successful setup when an organization was requested.
 
 Run the command on the same machine as the user's browser so the OAuth callback
 can reach the CLI. Remote agents can instead use `BITWAVE_AGENT_TOKEN` when one

@@ -9,18 +9,19 @@ OAuth client credentials. Those are not the normal onboarding path.
 Install the released CLI for the user's operating system, then run exactly:
 
 ```sh
-bitwave connect ORG_ID
+bitwave auth login --orgId ORG_ID
 ```
 
-`connect` performs the whole normal setup: it starts browser login when needed,
-verifies access to the requested organization, and saves that organization as
-active. Do not report success until this command confirms the organization.
+`auth login` is the canonical setup command. Without `--orgId`, it starts
+browser login and then presents an organization picker. With `--orgId`, it
+verifies and selects that exact organization, which is the deterministic path
+for an agent. Do not report success until the command confirms the organization.
 
 Browser authentication must run on the same computer as the user's browser
 because its callback uses localhost. If your execution environment is a remote
 or browser sandbox, do not invent alternate authentication choices or leave the
-CLI anonymous. Tell the user to run `bitwave connect ORG_ID` through an LLM or
-terminal that can execute commands on their local computer. A pre-provisioned
+CLI anonymous. Tell the user to run `bitwave auth login --orgId ORG_ID` through
+an LLM or terminal that can execute commands on their local computer. A pre-provisioned
 `BITWAVE_AGENT_TOKEN` is the supported non-browser path when one is already
 available; do not ask a normal user to create OAuth client credentials.
 
@@ -47,7 +48,7 @@ That is the **alternate** model. It is NOT the connection to Bitwave proper.
 **Bitwave proper is the organization product surface**: transactions and
 categorization, inventory views / lots / cost basis, report runs, close
 workflows, wallets, connections, and administration. These commands use the
-active organization selected by `bitwave connect ORG_ID`; they do not require a
+active organization selected during `bitwave auth login`; they do not require a
 plain-text ledger workspace. Platform details are documented in
 [docs/PLATFORM-INTEGRATION.md](docs/PLATFORM-INTEGRATION.md).
 
@@ -78,10 +79,9 @@ The CLI surface is the same for both modes — switching is just rewriting
 3. `BITWAVE_TOKEN` env
 4. `~/.bitwave/credentials.json` (PKCE / delegated session, auto-refreshed)
 
-For normal onboarding, use `bitwave connect ORG_ID`; do not present this
-resolution order as a choice to the user. `bitwave auth login` runs the PKCE
-browser flow. Delegation and agent-token management commands are unfinished and
-hidden from normal help.
+For normal onboarding, use `bitwave auth login`; do not present this resolution
+order as a choice to the user. Agents should add `--orgId ORG_ID`. Delegation
+and agent-token management commands are unfinished and hidden from normal help.
 
 ## Org context
 

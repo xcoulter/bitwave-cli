@@ -87,5 +87,5 @@ esac
 "$INSTALL_DIR/bitwave" version || true
 
 if [ -n "$ORG_ID" ]; then
-  "$INSTALL_DIR/bitwave" connect "$ORG_ID"
+  "$INSTALL_DIR/bitwave" auth login --orgId "$ORG_ID"
 fi

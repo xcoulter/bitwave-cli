@@ -76,12 +76,12 @@ Modes:
     ` + "`bitwave org use`" + `. The workspace ledger remains distinct from the
     Bitwave organization-product commands listed above.
 
-Connect to a Bitwave organization:
-  bitwave connect ORG_ID
+Sign in and select a Bitwave organization:
+  bitwave auth login
 
-This is the normal setup path. It opens browser login when needed, verifies the
-requested organization, and saves it as active. Organization-product commands
-do not require a ledger workspace.
+This is the normal setup path. It opens browser login and then presents an org
+picker. Agents can skip the picker with ` + "`bitwave auth login --orgId ORG_ID`" + `.
+Organization-product commands do not require a ledger workspace.
 
 Operating context is printed to stderr before every command as a one-line
 banner: ` + "`bitwave: workspace=... | org=... | identity=...`" + `. Suppress with
@@ -152,7 +152,6 @@ Tip: run ` + "`bitwave <command> --help`" + ` on any subcommand to see flags + e
 	_ = root.PersistentFlags().MarkHidden("auth-url")
 
 	addInGroup(groupAuth, newAuthCmd())
-	addInGroup(groupAuth, newConnectCmd())
 	addInGroup(groupAccount, newOrgCmd())
 	addInGroup(groupAccount, newWorkspaceCmd())
 	addInGroup(groupAccount, newJournalCmd())
